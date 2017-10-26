@@ -1,0 +1,476 @@
+/*
+	USER.H
+	THIS HEADER FILE IS FOR INVENTORY MANAGEMENT PROJECT
+*/
+#include"struc.h"
+void pak();	//Press any key blink;
+void get_name(char*);
+void get_pass(char*);
+int get_id(); //for int type input only
+void New_User();
+int Old_User(char *);
+void see_user();
+void edit_user(int);
+void change_pass(int);
+int remove_user(int);
+void log_out();
+
+void pak()
+{
+	textcolor(15+128);
+	cprintf(" Press any key...");
+	getch();
+	textcolor(15);
+}
+
+void get_name(char *name)
+{
+	int p=0,i,x,y;
+	char c;
+	_setcursortype(2);
+	while(p<25)
+	{
+		c=getch();
+		if(c==8)
+		{
+			p--;
+			if(p<0)
+				p=0;
+			else
+			{
+			printf("\b \b");
+			x=wherex();y=wherey();
+			gotoxy(2,7);
+			clreol();
+			gotoxy(x,y);
+			}
+		}
+		else
+		if(c==13)
+		{
+			if(p<5)
+			{
+				x=wherex();y=wherey();
+				gotoxy(2,7);
+				clreol();
+				printf("U_Name must be more than 4 char");
+				gotoxy(x,y);
+			}
+			else
+				break;
+		}
+		else
+		if((c>63 && c<91) || (c>96 && c<123) || (c==95) || (c>47 && c<58))
+		{
+			name[p++]=c;
+			printf("%c",c);
+			x=wherex();y=wherey();
+			gotoxy(2,7);
+			clreol();
+			gotoxy(x,y);
+		}
+		else
+		{
+			x=wherex();y=wherey();
+			gotoxy(2,7);
+			clreol();
+			printf(" Only alphaNumeic, @ and _");
+			gotoxy(x,y);
+		}
+
+	}
+	name[p]='\0';
+	_setcursortype(0);
+
+}
+void get_pass(char *password)
+{
+	int p=0,i,x,y;
+	char c;
+	_setcursortype(1);
+	while(p<15)
+	{
+		c=getch();
+		if(c==13)
+		{
+			if(p<5)
+			{
+				x=wherex();y=wherey();
+				gotoxy(2,y+2);
+				cprintf("Password must be more than 4 char");
+				gotoxy(x,y);
+			}
+			else
+				break;
+		}
+		else
+		if(c==8)
+		{
+			p--;
+			if(p<0)
+				p=0;
+			else
+			{
+			cprintf("\b \b");
+			x=wherex();y=wherey();
+			gotoxy(2,y+2);
+			clreol();
+			gotoxy(x,y);
+			}
+		}
+		else
+		if((c>63 && c<91) || (c>96 && c<123) || (c==95) || (c>47 && c<58) || c==35 || c==42)
+		{
+			password[p++]=c;
+			printf("*");
+			x=wherex();y=wherey();
+			gotoxy(2,y+2);
+			clreol();
+			gotoxy(x,y);
+		}
+		else
+		{
+			x=wherex();y=wherey();
+			gotoxy(2,y+2);
+			clreol();
+			printf("Only alphaNumeic,@,_,#,*");
+			gotoxy(x,y);
+		}
+	}
+	password[p]='\0';
+	_setcursortype(0);
+
+}
+int get_id()
+{
+	int id=-1,i=0;
+	char c;
+	__id:
+	while((c=getch())!=13)
+	{
+		if(id==-1)
+			id=0;
+		if(c>47 && c<58 && i<5)
+		{
+
+			id=id*10+(c-48);
+			printf("%d",c-48);i++;
+		}
+		if(c==8 && i>0)
+		{
+			i--;
+			printf("\b");
+			clreol();
+			id=(id-(id%10))/10;
+		}
+	}
+	if(id==-1)
+		goto __id;
+	else
+		return id;
+}
+void New_User()
+{
+	FILE *fl;
+	User U,U2;
+	int p;
+	char c;
+	st:
+	fl=fopen("user.bin","ab+");
+	usr_window(20,10,57,18,"New User");
+	gotoxy(2,2);
+	cprintf("User Name: ");
+	gotoxy(2,5);
+	cprintf("Password :");
+	fflush(stdin);
+	gotoxy(13,2);
+	get_name(U.U_Name);
+	U.U_Id=0;
+	while(fread(&U2,sizeof(U2),1,fl))
+	{
+		if(strcmp(U.U_Name,U2.U_Name)==0)
+		{
+			 gotoxy(2,7);
+			 printf("User Name already Exist.");
+			 fclose(fl);
+			 getch();
+			 goto st;
+		}
+		U.U_Id=U2.U_Id;
+	}
+	fflush(stdin);
+	gotoxy(13,5);
+	get_pass(U.password);
+	U.U_Id++;
+	//U.U_Id=(((int)ftell(fl))/sizeof(U))+1;
+	fwrite(&U,sizeof(U),1,fl);
+	fclose(fl);
+	gotoxy(2,7);
+	clreol();
+	if(U.U_Id==1)
+	printf("You are Admin User.");
+	else
+	printf("User created scesfully.");
+}	//END of New_User().
+
+int Old_User(char *U_Name)
+{
+	FILE *fl=fopen("user.bin","rb");
+	User U,U2;
+	int p;
+	char c;
+	clrscr();
+	if(!fl)
+	{
+		return 0;
+	}
+	else
+	{
+		usr_window(20,10,57,18,"LOGIN");
+		gotoxy(2,2);
+		cprintf("User Name: ");
+		gotoxy(2,5);
+		cprintf("Password :");
+		fflush(stdin);
+		gotoxy(13,2);
+		get_name(U.U_Name);
+		fflush(stdin);
+		gotoxy(13,5);
+		get_pass(U.password);
+		while(fread(&U2,sizeof(U2),1,fl))
+		{
+			if(strcmp(U.U_Name,U2.U_Name)==0)
+			{
+				if(strcmp(U.password,U2.password)==0)
+				{
+					strcpy(U_Name,U.U_Name);
+					return U2.U_Id;
+				}
+				else
+				{
+					return -1;
+				}
+			}
+		}
+		return -1;
+	}
+
+}	//END of Old_User().
+
+void see_user()
+{
+	FILE *U=fopen("user.bin","rb");
+	User usr;
+	char k;
+	int i=0,j,ch;
+	rect(32,1,80,25,1,"USERS");
+	textbackground(2);
+	clreol();
+	gotoxy(1,1);
+	cprintf("User_Id %c User_Name          %c Password\r\n",179,179);
+	textbackground(1);
+	i=3;
+	while(fread(&usr,sizeof(usr),1,U))
+	{
+		if(usr.U_Id==1)
+		{
+			textbackground(3);
+			clreol();
+		}
+		else
+			textbackground(1);
+		cprintf("%-8d",usr.U_Id);
+		cprintf("%c %-19s",179,usr.U_Name);
+		cprintf("%c %-12s\r\n",179,usr.password);i++;
+		if(i>24)
+				{
+					gotoxy(5,23);
+					printf("Press C to See More, B to Stop... ");
+					k=getch();
+					if(k!=66 && k!=99)
+					{
+						fclose(U);
+						break;
+					}
+					gotoxy(5,23);
+					clreol();
+					rect(32,1,80,25,1,"USERS");
+					textbackground(2);
+					cprintf("User_Id       %c User_Name               %c Password\r\n",179,179);
+					textbackground(1);
+					i=3;
+				}
+	}
+	fclose(U);
+	gotoxy(18,23);
+	cprintf(":: END :: ");
+	_setcursortype(0);
+	rect(1,12,30,18,1,"SELECT");
+	cprintf("\r\n%c%c1: Edit\r\n  2: Remove\r\n  3: Back",16,16);
+	k=select(1,2,3);
+	switch(k)
+	{
+		case 49:rect(1,12,30,18,1,"UPDATE");
+				_setcursortype(2);
+				printf("Enter U_Id: ");
+				ch=get_id();
+				_setcursortype(0);
+				edit_user(ch);
+				break;
+		case 50:rect(1,12,30,18,1,"REMOVE");
+				_setcursortype(2);
+				printf("Enter U_Id: ");
+				ch=get_id();
+				_setcursortype(0);
+				j=remove_user(ch);
+				clrscr();
+				gotoxy(8,3);
+				if(j)
+				{
+					textbackground(2);
+					cprintf("DONE.");
+				}
+				else
+				{
+					textbackground(4);
+					cprintf("ERROR!!!");
+				}
+				textbackground(1);
+				delay(2000);
+				break;
+		default: break;
+	}
+}	//END of see_user().
+
+void edit_user(int U_Id)
+{
+	FILE *U1,*U2;
+	User user1;
+	int ch,i=0;
+	U1=fopen("user.bin","rb");
+	U2=fopen("utmp.bin","wb");
+	while(fread(&user1,sizeof(user1),1,U1))
+	{
+		if(user1.U_Id==U_Id)
+		{
+			clrscr();
+			cprintf("\r\n%c%c1: Change User Name\r\n  2: Change Password\r\n  3: Back",16,16);
+			ch=select(1,2,3);
+			if(ch==49 || ch==50)
+			{
+				switch(ch)
+				{
+					case 49:clrscr();
+							cprintf("Old Name: %s",user1.U_Name);
+							cprintf("\r\nNew Name: ");
+							fflush(stdin);
+							get_name(user1.U_Name);
+							break;
+					case 50:clrscr();
+							printf("New Password: ");
+							get_pass(user1.password);
+							break;
+				}
+				i++;
+			}
+		}
+		fwrite(&user1,sizeof(user1),1,U2);
+	}
+	fclose(U1);
+	fclose(U2);
+	remove("user.bin");
+	rename("utmp.bin","user.bin");
+	if(i)
+	{
+		textbackground(2);
+		cprintf("\r\n     Done ");
+	}
+	else
+	{
+		textbackground(4);
+		cprintf("\r\nNo such U_Id exist");
+	}
+	textbackground(1);
+	delay(1000);
+}	//END of edit_user().
+
+void change_pass(int U_Id)
+{
+	FILE *fl=fopen("user.bin","rb"),*tmp=fopen("tmp.bin","wb");
+	User usr;
+	int i=0;
+	usr_window(20,10,57,18,"PASSWORD");
+	while(fread(&usr,sizeof(usr),1,fl))
+	{
+		if(U_Id==usr.U_Id)
+		{
+			gotoxy(2,2);
+			cprintf("\r\nNew Password: ");
+			get_pass(usr.password);
+			i++;
+		}
+		fwrite(&usr,sizeof(usr),1,tmp);
+	}
+	fclose(fl);
+	fclose(tmp);
+	remove("user.bin");
+	rename("tmp.bin","user.bin");
+	if(i)
+	{
+		textbackground(2);
+		cprintf("\r\nDone");
+	}
+	else
+	{
+		textbackground(4);
+		cprintf("\r\nError!!");
+	}
+	textbackground(1);
+	delay(1000);
+}	//END of change_pass();
+
+
+int remove_user(int U_Id)
+{
+	FILE *U1,*U2;
+	User user1;
+	int i=0;
+	clrscr();
+	if(U_Id==1)
+	{
+		printf("Admin user can't be deleted.");
+	}
+	else
+	{
+		U1=fopen("user.bin","rb");
+		U2=fopen("utmp.bin","wb");
+		while(fread(&user1,sizeof(user1),1,U1))
+		{
+			if(user1.U_Id!=U_Id)
+				fwrite(&user1,sizeof(user1),1,U2);
+			else
+				i++;
+		}
+		fclose(U1);
+		fclose(U2);
+		remove("user.bin");
+		rename("utmp.bin","user.bin");
+	}
+	return i;
+}	//END of remove_user().
+
+void log_out()
+{
+	clrwin(1,1,80,25);
+	rect(1,1,80,25,1," LOG OUT ");
+	gotoxy(28,13);
+	printf("Logging out, Please wait.");
+	delay(400);
+	printf(".");
+	delay(400);
+	printf(".");
+	delay(400);
+	printf(".");
+	delay(400);
+}
+//END of USER.H
