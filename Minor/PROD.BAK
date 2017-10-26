@@ -1,0 +1,457 @@
+/*
+	PROD.H
+	THIS HEADER FILE IS FOR INVENTORY MANAGEMENT PROJECT
+*/
+
+void New_Prod();
+void see_pro_dtl(char*,int);
+int remove_pro(char*,int);
+void update_pro(int,char*,int);
+void prod_list(int);
+void all_prod_list();
+
+void New_Prod()
+{
+	FILE *fl,*p,*tmp;
+	char name[25],c,oldscr[2048];
+	int l,id;
+	Catagory Cat;
+	Product Pro,tmpo;
+	gettext(22,2,65,22,oldscr);
+	usr_window(23,3,64,21,"New Product");
+	fl=fopen("catagory.bin","rb");
+	cprintf("\r\nCategory : ");
+	gotoxy(12,2);
+	cprintf("<select>");
+	gotoxy(15,3);
+	cprintf("%c",31);
+	gotoxy(10,16);
+	textcolor(15+128);
+	cprintf("<<Press Esc to Exit>>");
+	textcolor(15);
+	while((c=getch())!=13)
+	{
+		gotoxy(12,2);
+		clreol();
+		switch(c)
+		{
+			case 80: if(fread(&Cat,sizeof(Cat),1,fl))
+					 {
+						gotoxy(12,2);
+						cprintf("%s",Cat.Cat_Name);
+					 }
+					 else
+					 {
+						 rewind(fl);
+						 fread(&Cat,sizeof(Cat),1,fl);
+						 {
+							gotoxy(12,2);
+							cprintf("%s",Cat.Cat_Name);
+						}
+					 }
+					 clreol();
+					 break;
+			case 27: fclose(fl);puttext(22,2,65,22,oldscr);
+					 return;
+			default: gotoxy(12,2);
+					 cprintf("%.10s",Cat.Cat_Name);
+					 break;
+		}
+	}
+	gotoxy(10,16);
+	clreol();
+	gotoxy(15,3);
+	printf("   ");
+	strcpy(name,Cat.Cat_Name);
+	strcat(name,".cat");
+	p=fopen(name,"rb");
+	cprintf("\r\nPro_Id   : ");
+	Pro.Pro_Id=get_id();
+	while(fread(&tmpo,sizeof(tmpo),1,p))
+	{
+		if(tmpo.Pro_Id==Pro.Pro_Id)
+		{
+		cprintf("\r\nThis Pro_Id is already Exist. ");
+		pak();
+		fclose(p);
+		fclose(fl);
+		puttext(22,2,65,22,oldscr);
+		return;
+		}
+	}
+	rewind(p);
+	cprintf("\r\n\r\nName     : ");
+	fflush(stdin);
+	gets(Pro.Pro_Name);
+	cprintf("\r\nDescription: ");
+	fflush(stdin);
+	gets(Pro.description);
+	cprintf("\r\nQuantity: ");
+	fflush(stdin);
+	scanf("%d",&Pro.Qty);
+	cprintf("\r\nPrice    : ");
+	scanf("%f",&Pro.Price);
+	getdate(&Pro.d);
+	tmp=fopen("tmp.cat","wb");
+	if(fread(&tmpo,sizeof(tmpo),1,p))
+	{
+		while(tmpo.Pro_Id < Pro.Pro_Id && !feof(p))
+		{
+			fwrite(&tmpo,sizeof(tmpo),1,tmp);
+			fread(&tmpo,sizeof(tmpo),1,p);
+		}
+		fwrite(&Pro,sizeof(Pro),1,tmp);
+		if(!feof(p))
+			fwrite(&tmpo,sizeof(tmpo),1,tmp);
+		while(fread(&tmpo,sizeof(tmpo),1,p))
+			fwrite(&tmpo,sizeof(tmpo),1,tmp);
+	}
+	else
+		fwrite(&Pro,sizeof(Pro),1,tmp);
+	fclose(fl);
+	fclose(tmp);
+	fclose(p);
+	remove(name);
+	rename("tmp.cat",name);
+	gotoxy(16,16);
+	cprintf("Done");
+	delay(2000);
+	puttext(22,2,65,22,oldscr);
+}
+void see_pro_dtl(char *c_n,int id)
+{
+	FILE *fl=fopen(c_n,"rb");
+	Product P;
+	int i=0;
+	char oldscr[2048];
+	gettext(22,2,65,22,oldscr);
+	usr_window(23,3,64,21,"DETAIL");
+	if(!fl)
+	{
+		gotoxy(3,3);
+		cprintf("No such Category exist. ");
+		gotoxy(11,16);pak();
+		puttext(22,2,65,22,oldscr);
+		return;
+	}
+	while(fread(&P,sizeof(P),1,fl))
+	{
+		if(id==P.Pro_Id)
+		{
+			gotoxy(1,1);
+			textbackground(3);
+			clreol();
+			gotoxy(10,1);
+			c_n[strlen(c_n)-4]='\0';
+			cprintf("Category :%c %s\r\n",26,c_n);
+			textbackground(2);
+			cprintf("Pro_Id\r\n\r\nPro_Name\r\n\r\nDescription\r\n\r\nQty\r\n\r\nMRP\r\n\r\nDate Purchesed");
+			for(i=2;i<13;i++)
+			{
+				gotoxy(15,i);
+				cprintf("%c",179);
+			}
+			i=2;
+			gotoxy(17,i);
+			cprintf("%d",P.Pro_Id);i+=2;
+			gotoxy(17,i);
+			cprintf("%s",P.Pro_Name);i+=2;
+			gotoxy(17,i);
+			cprintf("%s",P.description);i+=2;
+			gotoxy(17,i);
+			cprintf("%d",P.Qty);i+=2;
+			gotoxy(17,i);
+			cprintf("%.2f (INR)",P.Price);i+=2;
+			gotoxy(17,i);
+			cprintf("%d/%d/%d",P.d.da_day,P.d.da_mon,P.d.da_year);
+			break;
+		}
+	}
+	fclose(fl);
+	if(!i)
+	{
+		gotoxy(3,3);
+		cprintf("No such Pro_Id Exist. ");
+		gotoxy(11,16);pak();
+		puttext(22,2,65,22,oldscr);
+		return;
+	}
+	else
+	{
+		gotoxy(11,16);
+		pak();
+		puttext(22,2,65,22,oldscr);
+	}
+}
+int remove_pro(char *c_n,int id)
+{
+	FILE *fl=fopen(c_n,"rb"),*tmp=fopen("tmp.cat","wb");
+	Product P;
+	int i=0;
+	if(!fl && !tmp)
+	{
+		  return i;
+	}
+	while(fread(&P,sizeof(P),1,fl))
+	{
+		if(P.Pro_Id!=id)
+		{
+			fwrite(&P,sizeof(P),1,tmp);
+		}
+		else
+		i++;
+	}
+	fclose(fl);
+	fclose(tmp);
+	remove(c_n);
+	rename("tmp.cat",c_n);
+	return i;
+}
+void update_pro(int i,char *c_n,int id)
+{
+	FILE *fl=fopen(c_n,"rb"),*tmp=fopen("tmp.cat","wb");
+	Product P;
+	char c,oldscr[2048];
+	int q;
+	gettext(25,10,65,20,oldscr);
+	usr_window(26,11,64,19,"Enter New Detail");
+	if(!fl && !tmp)
+	{
+		cprintf("ERROR");
+		return;
+	}
+	while(fread(&P,sizeof(P),1,fl))
+	{
+		if(P.Pro_Id==id)
+		{
+			fflush(stdin);
+			switch(i)
+			{
+			case 49: cprintf("\r\nNew Name: ");
+					gets(P.Pro_Name);
+					break;
+			case 50:	cprintf("\r\nNew description: ");
+					gets(P.description);
+					break;
+			case 51: cprintf("\r\nQuantity increase by : ");
+					q=get_id();
+					P.Qty+=q;
+					getdate(&P.d);
+					break;
+			case 52:	cprintf("\r\nNew MRP: ");
+					scanf("%f",&P.Price);
+			}
+		}
+		fwrite(&P,sizeof(P),1,tmp);
+	}
+	fclose(fl);
+	fclose(tmp);
+	remove(c_n);
+	rename("tmp.cat",c_n);
+	cprintf("\r\n         SUCCESS");
+	delay(1000);
+	puttext(25,10,65,20,oldscr);
+}
+
+void prod_list(int c_id)
+{
+	FILE *fl=fopen("Catagory.bin","rb"),*fl2;
+	Catagory Cat;
+	Product Pro;
+	int m=0,j=0;
+	char c[25];
+	clrwin(1,11,80,25);
+	rect(1,11,50,25,1,"PRODUCT");
+	gotoxy(1,1);
+	textbackground(2);
+	clreol();
+	if(feof(fl))
+	{
+		cprintf("No any Catagory exist.");
+	}
+	else
+	{
+	  while(fread(&Cat,sizeof(Cat),1,fl))
+	  {
+		if(Cat.Cat_Id==c_id)
+		{
+			strcpy(c,Cat.Cat_Name);
+			strcat(c,".cat");
+			fl2=fopen(c,"rb");
+			if(feof(fl2))
+			{
+				cprintf("No Item in catagory : %s",Cat.Cat_Name);
+			}
+			else
+			{
+				rect(1,11,50,25,1,Cat.Cat_Name);
+				gotoxy(1,1);
+				textbackground(2);
+				clreol();
+				cprintf("Pro_Id %c Pro_Name         %c  QTy  %c Price\r\n",179,179,179);
+				textbackground(1);
+				while(fread(&Pro,sizeof(Pro),1,fl2))
+				{
+					cprintf("%-6d %c %-16s %c %-5d %c %.2f\r\n",Pro.Pro_Id,179,Pro.Pro_Name,179,Pro.Qty,179,Pro.Price);
+					j++;
+					if(j>9)
+					{
+						gotoxy(6,13);textbackground(3);pak();textbackground(1);
+						gotoxy(1,1);
+						clrscr();
+						textbackground(2);
+						clreol();
+						cprintf("Pro_Id %c Pro_Name             %c  QTy  %c Price\r\n",179,179,179);
+						textbackground(1);
+						j=0;
+					}
+				}
+			}
+			m++;
+			fclose(fl2);
+			break;
+		}
+	  }              //End of while
+	}
+	fclose(fl);
+	if(!m)
+	{	cprintf("This category id does not exist.");
+		gotoxy(4,13);textbackground(3);pak();textbackground(1);
+	}
+	else
+	{
+		gotoxy(4,13);textbackground(3);cprintf(":: END :: ");pak();textbackground(1);
+	}
+}
+
+void all_prod_list()
+{
+	FILE *C,*P;
+	Catagory Cat;
+	Product Pro;
+	char c_n[25],oldscr[2048];
+	int ch,id,i,j;
+	do
+	{
+		clrwin(1,11,80,25);
+		rect(1,11,80,25,1,"PRODUCTS");
+		gotoxy(1,1);
+		textbackground(2);
+		clreol();
+		C=fopen("Catagory.bin","rb");
+		if(!C || feof(C))
+		{
+			cprintf("::  No Stock  :: ");pak();
+			fclose(C);
+			return;
+		}
+		cprintf("Prod_Id%c Prod_Name     %c Qty %c    MRP    %c Buy_Date  %c Cat_Name\r\n",179,179,179,179,179);
+		i=2;
+		textbackground(1);
+		while(fread(&Cat,sizeof(Cat),1,C))
+		{
+			strcpy(c_n,Cat.Cat_Name);
+			strcat(c_n,".cat");
+			P=fopen(c_n,"rb");
+			while(fread(&Pro,sizeof(Pro),1,P))
+			{
+				cprintf("%-7d",Pro.Pro_Id);
+				if(strlen(Pro.Pro_Name) > 11)
+					cprintf("%c %.11s...",179,Pro.Pro_Name);
+				else
+					cprintf("%c %-14s",179,Pro.Pro_Name);
+				if(Pro.Qty > 99)
+					cprintf("%c 99+ ",179);
+				else
+					cprintf("%c %.2d  ",179,Pro.Qty);
+				printf("%c %.2f ",179,Pro.Price);
+				gotoxy(42,i++);
+				cprintf("%c %d/%d/%d  ",179,Pro.d.da_day,Pro.d.da_mon,Pro.d.da_year%100);
+				cprintf("%c %s\r\n",179,Cat.Cat_Name);
+				if(i>9 && !feof(P))
+				{
+
+					gotoxy(20,13);textbackground(3);pak();textbackground(1);
+					gotoxy(1,1);
+					clrscr();
+					textbackground(2);
+					clreol();
+					cprintf("Prod_Id%c Prod_Name     %c Qty %c    MRP    %c Buy_Date  %c Cat_Name\r\n",179,179,179,179,179);
+					textbackground(1);
+					i=2;
+				}
+			}
+			fclose(P);
+		}
+		gotoxy(30,13);textbackground(3);cprintf(":: END ::");textbackground(1);
+		fclose(C);
+		rect(52,1,80,9,1,"SELECT");
+		cprintf("\r\n%c%c1: Detail\r\n  2: Add New\r\n  3: Update\r\n  4: Remove\r\n  5: Back",16,16);
+		ch=select(1,2,5);
+		switch(ch)
+		{
+			case 49:gettext(24,10,59,19,oldscr);
+					usr_window(25,11,58,18,"DETAIL");
+					cprintf("\r\nEnter Pro_Id: ");
+					id=get_id();
+					cprintf("\r\n\r\nCategory name: ");
+					scanf("%s",c_n);
+					puttext(24,10,59,19,oldscr);
+					strcat(c_n,".cat");
+					see_pro_dtl(c_n,id);
+					break;
+			case 50: New_Prod();
+					break;
+			case 51:gettext(24,10,59,19,oldscr);
+					usr_window(25,11,58,18,"UPDATE");
+					cprintf("\r\nEnter Pro_Id: ");
+					id=get_id();
+					cprintf("\r\n\r\nCategory name: ");
+					scanf("%s",c_n);
+					puttext(24,10,59,19,oldscr);
+					strcat(c_n,".cat");
+					gettext(22,9,60,20,oldscr);
+					usr_window(23,10,59,19,"WHAT FOR UPDATE");
+					cprintf("\r\n%c%c1: Name\r\n  2: description\r\n  3: Quantity\r\n  4: MRP\r\n  5: Back",16,16);
+					i=select(1,2,5);
+					if(i > 48 && i < 53)
+					{
+						puttext(22,9,60,20,oldscr);
+						update_pro(i,c_n,id);
+					}
+					else
+					{
+						cprintf("\r\nWrong Choice...");
+						pak();
+						puttext(22,9,60,20,oldscr);
+					}
+					break;
+			case 52:gettext(24,10,59,19,oldscr);
+					usr_window(25,11,58,18,"REMOVE");
+					cprintf("\r\nEnter Pro_Id: ");
+					id=get_id();
+					cprintf("\r\n\r\nCategory name: ");
+					scanf("%s",c_n);
+					strcat(c_n,".cat");
+					i=remove_pro(c_n,id);
+					if(i)
+					{
+						clrscr();
+						cprintf("\r\nProduct removed Successfully.\r\n     ");
+						pak();
+					}
+					else
+					{
+						clrscr();
+						cprintf("\r\nProduct Not found!!!\r\n     ");
+						pak();
+					}
+					puttext(24,10,59,19,oldscr);
+					break;
+			default: ch=100;
+					break;
+		}
+	}while(ch!=100);
+
+}
+

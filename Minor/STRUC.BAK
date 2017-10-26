@@ -1,0 +1,195 @@
+/*
+	STRUC.H
+	THIS HEADER FILE IS FOR INVENTORY MANAGEMENT PROJECT
+*/
+
+#include<dos.h>
+void good_bye();
+void rect(int,int,int,int,int,char*);
+void clrwin(int,int,int,int);
+void usr_window(int,int,int,int,char*);
+int select(int,int,int);
+typedef struct
+{
+	 int U_Id;
+	 char U_Name[40];
+	 char password[15];
+}User;
+typedef struct
+{
+	int Cat_Id;
+	char Cat_Name[25];
+	struct date d;
+	struct time t;
+}Category;
+typedef struct
+{
+	int Pro_Id,Qty;
+	char Pro_Name[30],description[100];
+	float Price;
+	struct date d;
+}Product;
+typedef struct
+{
+	int O_Id,Pro_Id,Qty;
+	char Pro_Name[25],Cat_Name[25];
+	double Price;
+	struct date d;
+	struct time t;
+
+}Order;
+void good_bye()
+{
+	int i,j;
+	clrwin(1,1,80,25);
+	rect(1,1,80,25,1," EXIT ");
+	gotoxy(32,11);
+	printf("%c G O O D  B Y E %c",2,2);
+	for(i=1,j=79;i<80;i++,j--)
+	{
+		gotoxy(1,12);
+		clreol();
+		gotoxy(i,12);
+		printf("%c",16);
+		gotoxy(j,12);
+		printf("%c",17);
+		delay(30);
+	}
+}
+void rect(int x1,int y1,int x2,int y2,int c,char *Name)
+{
+	int i,j;
+	x2--;
+	textbackground(c);
+	window(x1,y1,x2,y2);
+	clrscr();
+	for(i=y1;i<=y2;i++)
+	{
+		if(i==y1)
+		{
+			for(j=x1;j<=x2;j++)
+			{
+				if(j==x1)
+					printf("%c",201);
+				else
+					if(j==x2)
+						cprintf("%c\r",187);
+				else
+					printf("%c",205);
+			}
+		}
+		else
+		if(i==y2)
+		{
+			for(j=x1;j<=x2;j++)
+			{
+				if(j==x1)
+					printf("%c",200);
+				else
+					if(j==x2)
+						printf("%c\b",188);
+				else
+					printf("%c",205);
+			}
+
+		}
+		else
+		{
+			for(j=x1;j<=x2;j++)
+			{
+				if(j==x1)
+					printf("%c",186);
+				else
+					if(j==x2)
+						cprintf("%c\r",186);
+				else
+					printf(" ");
+			}
+
+		}
+	}
+	gotoxy(((int)((1+x2-x1)/2))-(int)(strlen(Name)/2),1);
+	cprintf(" %s ",Name);
+	clrwin(x1+1,y1+1,x2-1,y2-1);
+	gotoxy(x1,y1);
+}
+void clrwin(int x1,int y1,int x2,int y2)
+{
+	textbackground(1);
+	window(x1,y1,x2,y2);
+	clrscr();
+}
+void usr_window(int x1,int y1,int x2,int y2,char *Name)
+{
+	textbackground(BLACK);
+	window(x1+1,y1+1,x2+1,y2+1);
+	clrscr();
+	rect(x1,y1,x2,y2,2,Name);
+	textbackground(2);
+	clrscr();
+}
+
+
+
+
+int select(int x,int y, int s)
+{
+	int ch=49,ch1,i=1;
+	while((ch1=getch())!=13)
+	{
+		switch(ch1)
+		{
+			case 49: case 50 : case 51: case 52: case 53 : case 54: case 55: case 56: case 57:
+				if(ch1<49+s)
+				{
+					gotoxy(x,y+s+1);
+					return ch1;
+				}
+				else
+					break;
+			case 80: if(i==s)
+					 {
+						gotoxy(x,y+s-1);
+						printf("  ");
+						gotoxy(x,y);
+						printf("%c%c",16,16);
+						i=1;
+						ch=49;
+					 }
+					 else
+					 {
+						gotoxy(x,y+i-1);
+						printf("  ");
+						gotoxy(x,y+i);
+						printf("%c%c",16,16);
+						i=(i%s)+1;
+						ch++;
+					 }
+					 gotoxy(x,y+s+1);
+					 break;
+			case 72:if(i==1)
+					 {
+						gotoxy(x,y);
+						printf("  ");
+						gotoxy(x,y+s-1);
+						printf("%c%c",16,16);
+						i=s;
+						ch=48+s;
+					 }
+					 else
+					 {
+						gotoxy(x,y+i-1);
+						printf("  ");
+						gotoxy(x,y+i-2);
+						printf("%c%c",16,16);
+						i--;
+						ch--;
+					 }
+					 gotoxy(x,y+s+1);
+					 break;
+			default: break;
+		}
+	}
+	return ch;
+
+}
